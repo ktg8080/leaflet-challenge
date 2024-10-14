@@ -1,20 +1,44 @@
 // Link to GeoJson data
 let geoData = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
 
-// Create a base map layer using OpenStreetMap tiles
+// Link to tectonic plates (raw GitHub link)
+let techPlates = "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json";
+
+// Create a base map layer
 let baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 });
+
+// Create satellite map layer
+let satMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+});
+
+// Create layer groups for the overlays
+let earthquakesLayer = L.layerGroup();  // Earthquakes layer
+let techlayers = L.layerGroup();        // Tectonic plates layer
+
+// Define base maps
+let baseMap = {
+    "Basic": baseLayer,
+    "Satellite": satMap
+};
+
+// Define overlay maps
+let overlayMap = {
+    "Earthquakes": earthquakesLayer,
+    "Tectonic Plates": techlayers
+};
 
 // Initialize the map object
 let myMap = L.map("map", {
     center: [37.09, -95.71],
     zoom: 5,
-    layers: [baseLayer]
+    layers: [baseLayer]  // Start with the basic layer
 });
 
-// Create a new layer group to hold earthquake markers
-let earthquakesLayer = L.layerGroup().addTo(myMap);
+// Add layer control to the map
+L.control.layers(baseMap, overlayMap).addTo(myMap);
 
 // A function to determine marker size based on earthquake magnitude
 function getMagnitude(magnitude) {
@@ -23,17 +47,16 @@ function getMagnitude(magnitude) {
 
 // A function to determine marker color based on earthquake depth
 function getColor(depth) {
-    return depth > 90 ? 'red' :            // Deepest
-           depth > 70 ? 'orangered' :      // Very deep
-           depth > 50 ? 'darkorange' :     // Deep
-           depth > 30 ? 'gold' :           // Moderate
-           depth > 10 ? 'yellowgreen' :    // Shallow
-                        'limegreen';       // Very shallow
+    return depth > 90 ? 'red' :
+           depth > 70 ? 'orangered' :
+           depth > 50 ? 'darkorange' :
+           depth > 30 ? 'gold' :
+           depth > 10 ? 'yellowgreen' :
+                        'limegreen';
 }
 
-// Load GeoJSON data using D3
+// Load earthquake data using D3
 d3.json(geoData).then(function(data) {
-    // Loop through each feature in the GeoJSON data
     data.features.forEach(function(feature) {
         let coordinates = feature.geometry.coordinates;
         let magnitude = feature.properties.mag;
@@ -53,20 +76,30 @@ d3.json(geoData).then(function(data) {
         // Add the marker to the earthquakes layer
         earthquakesLayer.addLayer(marker);
     });
-})
+});
 
-// Set up the legend.
+// Load tectonic plates data
+d3.json(techPlates).then(function(data) {
+    L.geoJson(data, {
+        style: function(feature) {
+            return {
+                color: "orange",
+                weight: 2
+            };
+        }
+    }).addTo(techlayers);  // Add to the tectonic plates layer group
+});
+
+// Set up the legend
 let legend = L.control({ position: "bottomright" });
 
 legend.onAdd = function() {
     let div = L.DomUtil.create("div", "info legend");
 
-    // Define the depth ranges and corresponding green colors.
     let limits = [-10, 10, 30, 50, 70, 90];
     let colors = limits.map(depth => getColor(depth + 1));
     let labels = [];
 
-    // Add title and min/max labels.
     let legendInfo = `
         <h2>Earthquake Depth (km)</h2>
         <div class="labels">
@@ -76,7 +109,6 @@ legend.onAdd = function() {
 
     div.innerHTML = legendInfo;
 
-    // Generate color labels for each depth range.
     limits.forEach(function(limit, index) {
         labels.push(
             `<li style="background-color: ${colors[index]}"></li> 
@@ -88,5 +120,5 @@ legend.onAdd = function() {
     return div;
 };
 
-// Adding the legend to the map.
+// Add the legend to the map
 legend.addTo(myMap);
