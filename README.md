@@ -54,4 +54,4 @@ As an optional challenge, add a second dataset to visualize the relationship bet
 	•	Overlays: Earthquakes vs. Tectonic Plates.
 
 
- Credits: Code was created using classwork from Module 15. The CSS code to format the legeng. Satellite image map was found from this website: https://stackoverflow.com/questions/35487887/how-to-add-satellite-view-in-leaflet
+ Credits: Code was created using classwork from Module 15. The CSS code to format the legend was created by ChatGPT. Satellite image map was found from this website: https://stackoverflow.com/questions/35487887/how-to-add-satellite-view-in-leaflet
